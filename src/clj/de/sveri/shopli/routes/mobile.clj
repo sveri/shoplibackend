@@ -1,5 +1,6 @@
 (ns de.sveri.shopli.routes.mobile
   (:require [compojure.core :refer [routes GET POST]]
+            [compojure.coercions :refer [as-int]]
             [ring.util.response :refer [response status]]
             [de.sveri.shopli.db.lists :as db-l]
             [de.sveri.shopli.db.list-entry :as db-le]
@@ -38,10 +39,13 @@
                        (.printStackTrace e)
                        (status (response {:error "failed adding list entry"}) 500))))
 
+(defn get-list-entries [db list-id]
+  (response {:status :ok :list-entries (db-le/get-list-entries db list-id)}))
+
 (defn mobile-routes [config db]
   (routes
     (POST "/mobile/authenticate" [device-id app-id :as req] (authenticate device-id app-id req))
     (POST "/mobile/list" [name :as req] (add-list name db req))
     (GET "/mobile/list" req (get-lists db req))
-    (POST "/mobile/list-entry" [list-id name] (add-list-entry list-id name db))))
-    ;(POST "/mobile/list-entry/list/:id" [id name] (add-list-entry id name db))))
+    (POST "/mobile/list-entry" [list-id name] (add-list-entry list-id name db))
+    (GET "/mobile/list-entry/list/:id" [id :<< as-int] (get-list-entries db id))))

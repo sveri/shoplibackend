@@ -82,3 +82,17 @@
         list-entry (:list-entry (parse-response-body (add-list-entry list-id "entry-name")))]
     (is (not (nil? (:id list-entry))))
     (is (= "entry-name" (:name list-entry)))))
+
+(defn get-list-entries [list-id]
+  (cl/get (str test-base-url "/mobile/list-entry/list/" list-id)
+          (add-auth-token {:accept    :json
+                           :throw-exceptions false})))
+
+(deftest get-list-entries-test
+  (let [list-id (-> (parse-response-body (add-list "list-name")) :list :id)
+        _ (add-list-entry list-id "entry-name1")
+        _ (add-list-entry list-id "entry-name2")
+        list-entries (:list-entries (parse-response-body (get-list-entries list-id)))]
+    (is (= 2 (count list-entries)))
+    (is (= "entry-name1" (-> list-entries first :name)))
+    (is (= "entry-name2" (-> list-entries second :name)))))

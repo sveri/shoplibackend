@@ -15,8 +15,9 @@
 (defn create-list-entry [db name list-id]
   (first (j/insert! db :list_entry {:name name :list_id list-id})))
 
-(defn get-lists [db mobile-clients-id]
-  (j/query db ["select * from lists where mobile_clients_id = ?" mobile-clients-id]))
+(defn get-list-entries [db list-id]
+  (j/query db ["select * from list_entry where list_id = ? order by created_at asc" list-id]))
+
 
 ;(defn update-user [db id fields]
 ;  (j/update! db :users fields ["id = ?" id]))
