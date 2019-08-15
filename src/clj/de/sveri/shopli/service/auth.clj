@@ -28,6 +28,10 @@
    {:pattern #"^/mobile/.*"
     :handler rest-loggedin-access}])
 
+(def ws-rules
+  [{:pattern #"^/ws.*"
+    :handler rest-loggedin-access}])
+
 (defn unauthorized-handler
   [request _]
   (let [current-url (:uri request)]

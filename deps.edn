@@ -54,7 +54,8 @@
          org.clojure/core.async              {:mvn/version "0.4.490"}}
 
  :aliases
-        {:test    {:extra-deps {ring/ring-mock {:mvn/version "0.4.0"}}
+        {:test    {:extra-deps {ring/ring-mock {:mvn/version "0.4.0"}
+                                stylefruits/gniazdo {:mvn/version "1.1.1"}}
                    :extra-paths ["test/clj"]}
 
          :integ-test {:extra-paths ["integtest/clj"]}

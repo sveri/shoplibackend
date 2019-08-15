@@ -10,12 +10,13 @@
             [ring.middleware.format :as rmf]
             [ring.util.response :as rur]
             [buddy.auth.middleware :as bam]
-            [immutant.web.middleware :as web-middleware]
+            ;[immutant.web.middleware :as web-middleware]
             [compojure.route :as route]
             [com.stuartsierra.component :as comp]
             [ring.middleware.reload :refer [wrap-reload]]
             [buddy.auth.accessrules :as baa]
-            [de.sveri.shopli.routes.websockets :refer [websocket-callbacks]]
+            [de.sveri.shopli.routes.websockets :as rw]
+            ;[de.sveri.shopli.routes.websockets :refer [websocket-callbacks]]
             [de.sveri.shopli.routes.mobile :as rm]
             [de.sveri.shopli.routes.home :refer [home-routes]]
             [de.sveri.shopli.routes.user :refer [user-routes registration-routes]]
@@ -52,10 +53,11 @@
 
 (defn get-handler [config locale {:keys [db]}]
   (routes
-    ;(-> (GET "/ws" [] (ring.response/content-type
-    ;                    (ring.response/resource-response "index.html" {:root "/ws"})
-    ;                    "text/html"))
-    ;    (web-middleware/wrap-websocket (websocket-callbacks config db)))
+    (-> (rw/ws-routes config db))
+        ;(wrap-routes baa/wrap-access-rules {:rules s-auth/ws-rules :on-error s-auth/my-unauthorized-handler})
+        ;(wrap-routes bam/wrap-authorization s-auth/jws-backend)
+        ;(wrap-routes bam/wrap-authentication s-auth/jws-backend))
+
 
     ;(rm/mobile-routes config db)
     (-> (rm/mobile-routes config db)
@@ -67,7 +69,7 @@
     (-> (app-handler
           (into [] (concat (when (:registration-allowed? config) [(registration-routes config db)])
                            ;; add your application routes here
-                           [home-routes (user-routes config db) base-routes]))
+                           [home-routes  (user-routes config db) base-routes]))
           ;; add custom middleware here
           :middleware (load-middleware config)
           :ring-defaults (mk-defaults false)
@@ -81,6 +83,12 @@
         (wrap-file "resources")
         ; Content-Type, Content-Length, and Last Modified headers for files in body
         (wrap-file-info))))
+
+    ;(-> (GET "/ws" [] (rur/content-type
+    ;                    ;(rur/resource-response "index.html" {:root "/ws"})
+    ;                    (rur/resource-response "index.html")
+    ;                    "text/html"))
+    ;    (web-middleware/wrap-websocket (websocket-callbacks config db)))))
 
 (defrecord Handler [config locale db]
   comp/Lifecycle
