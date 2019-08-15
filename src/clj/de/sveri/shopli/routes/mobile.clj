@@ -2,6 +2,7 @@
   (:require [compojure.core :refer [routes GET POST]]
             [ring.util.response :refer [response status]]
             [de.sveri.shopli.db.lists :as db-l]
+            [de.sveri.shopli.db.list-entry :as db-le]
             [de.sveri.shopli.db.mobile-clients :as db-mc]
             [de.sveri.shopli.service.auth :as sa]
             [buddy.sign.jwt :as jwt]
@@ -29,8 +30,18 @@
   (let [mobile-clients-id (get-mobile-clients-id db req)]
     (response {:status :ok :lists (db-l/get-lists db mobile-clients-id)})))
 
+(defn add-list-entry [list-id name db]
+  (try
+    (let [list-entry (db-le/create-list-entry db name list-id)]
+      (response {:status :ok :list-entry list-entry}))
+    (catch Exception e (log/error "Failed adding list-entry with name: " name)
+                       (.printStackTrace e)
+                       (status (response {:error "failed adding list entry"}) 500))))
+
 (defn mobile-routes [config db]
   (routes
     (POST "/mobile/authenticate" [device-id app-id :as req] (authenticate device-id app-id req))
     (POST "/mobile/list" [name :as req] (add-list name db req))
-    (GET "/mobile/list" req (get-lists db req))))
+    (GET "/mobile/list" req (get-lists db req))
+    (POST "/mobile/list-entry" [list-id name] (add-list-entry list-id name db))))
+    ;(POST "/mobile/list-entry/list/:id" [id name] (add-list-entry id name db))))

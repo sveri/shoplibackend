@@ -73,3 +73,12 @@
     (is (= 2 (count lists)))
     (is (= "list-name" (-> lists first :name)))
     (is (= "list-name2" (-> lists second :name)))))
+
+(defn add-list-entry [list-id entry-name]
+  (post-to-url-with-body (str "/mobile/list-entry") {:name entry-name :list-id list-id}))
+
+(deftest add-list-entry-test
+  (let [list-id (-> (parse-response-body (add-list "list-name")) :list :id)
+        list-entry (:list-entry (parse-response-body (add-list-entry list-id "entry-name")))]
+    (is (not (nil? (:id list-entry))))
+    (is (= "entry-name" (:name list-entry)))))

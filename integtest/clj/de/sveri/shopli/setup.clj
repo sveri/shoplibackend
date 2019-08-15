@@ -12,7 +12,7 @@
   ;[de.sveri.shopli.locale :as l])
   (:import (java.util.logging Logger Level)))
 
-(def db-uri "jdbc:postgresql://localhost:5432/shoplibackend?user=shoplibackend&password=shoplibackend")
+(def db-uri "jdbc:postgresql://localhost:5432/shoplibackend_test?user=shoplibackend&password=shoplibackend")
 (def db {:connection-uri db-uri})
 
 (def ^:dynamic *driver*)
@@ -58,4 +58,8 @@
   text NOT NULL, user_id BIGINT);"])
   (j/execute! db ["drop table if exists lists;"])
   (j/execute! db ["CREATE TABLE lists (id bigserial NOT NULL PRIMARY KEY,name text,mobile_clients_id BIGINT NOT NULL);"])
+  (j/execute! db ["drop table if exists list_entry;"])
+  (j/execute! db ["CREATE TABLE list_entry (id bigserial NOT NULL PRIMARY KEY,list_id BIGINT NOT NULL,
+                    name text,done boolean default false not null,
+                    created_at timestamp without time zone default (now() at time zone 'utc'));"])
   (f))
