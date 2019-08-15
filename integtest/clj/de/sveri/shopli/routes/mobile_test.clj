@@ -31,19 +31,24 @@
                             :content-type     :json
                             :throw-exceptions false})))
 
+(defn get-with-url [url]
+  (cl/get (str test-base-url url)
+          (add-auth-token {:accept    :json
+                           :throw-exceptions false})))
+
 (deftest authentication
   (let [resp (get-api-token-response)]
     (is (= 200 (:status resp)))))
 
 (deftest add-list-forbidden
-  (let [resp (cl/post (str test-base-url "mobile/add-list")
+  (let [resp (cl/post (str test-base-url "mobile/list")
                       {:body             (j/write-str {:name "sdlkfj"})
                        :content-type     :json
                        :throw-exceptions false})]
     (is (= 403 (:status resp)))))
 
 (defn add-list [list-name]
-  (post-to-url-with-body "mobile/add-list" {:name list-name}))
+  (post-to-url-with-body "mobile/list" {:name list-name}))
 
 (deftest add-one-list
   (let [resp (add-list "list-name")
@@ -60,3 +65,11 @@
     (is (= "list-name" (-> body :list :name)))
     (is (= 200 (:status resp1)))
     (is (= "list-name2" (-> body1 :list :name)))))
+
+(deftest get-lists
+  (let [_ (add-list "list-name")
+        _ (add-list "list-name2")
+        lists (:lists (parse-response-body (get-with-url "mobile/list")))]
+    (is (= 2 (count lists)))
+    (is (= "list-name" (-> lists first :name)))
+    (is (= "list-name2" (-> lists second :name)))))
