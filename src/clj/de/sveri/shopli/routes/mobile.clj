@@ -48,16 +48,16 @@
   (response {:status :ok :list-entries (db-le/get-list-entries db list-id)}))
 
 (defn split-list-entries-and-add-to-list [list-entries-with-list]
-  (loop [list-entries-with-list list-entries-with-list lists-map {}]
-    (if (empty? list-entries-with-list)
-      lists-map
-      (let [list-entry-with-list (first list-entries-with-list)
-            list-entry (select-keys list-entry-with-list [:id :name :done :created_at])
-            existing-list (get lists-map (:l_id list-entry-with-list))
-            existing-list-entries (get existing-list :list-entries)
-            list (assoc {} :id (:l_id list-entry-with-list) :name (:l_name list-entry-with-list)
-                           :list-entries (conj existing-list-entries list-entry))]
-        (recur (rest list-entries-with-list) (assoc lists-map (:id list) list))))))
+  (vals (loop [list-entries-with-list list-entries-with-list lists-map {}]
+          (if (empty? list-entries-with-list)
+            lists-map
+            (let [list-entry-with-list (first list-entries-with-list)
+                  list-entry (select-keys list-entry-with-list [:id :name :done :created_at])
+                  existing-list (get lists-map (:l_id list-entry-with-list))
+                  existing-list-entries (get existing-list :list-entries)
+                  list (assoc {} :id (:l_id list-entry-with-list) :name (:l_name list-entry-with-list)
+                                 :list-entries (conj existing-list-entries list-entry))]
+              (recur (rest list-entries-with-list) (assoc lists-map (:id list) list)))))))
 
 (defn get-initial-data [db req]
   (let [mobile-clients-id (get-mobile-clients-id db req)

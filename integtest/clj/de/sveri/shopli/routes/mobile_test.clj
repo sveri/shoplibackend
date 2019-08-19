@@ -105,7 +105,7 @@
         _ (add-list-entry list-id "entry-name2")
         _ (add-list-entry list-id2 "entry-name21")
         list-with-entries (-> (parse-response-body (get-with-url "mobile/initial-data")) :lists)
-        first-list (:1 list-with-entries)
+        first-list (first list-with-entries)
         entries (:list-entries first-list)]
     (is (= "list-name" (:name first-list)))
     (is (= 2 (count entries)))
