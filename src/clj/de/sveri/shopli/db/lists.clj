@@ -16,7 +16,13 @@
   (first (j/insert! db :lists {:name name :mobile_clients_id mobile-clients-id})))
 
 (defn get-lists [db mobile-clients-id]
-  (j/query db ["select * from lists where mobile_clients_id = ?" mobile-clients-id]))
+  (j/query db ["select * from lists where mobile_clients_id = ? order by name asc" mobile-clients-id]))
+
+(defn get-lists-with-entries [db mobile-clients-id]
+  (j/query db ["select l.id as l_id, l.name as l_name, le.* from list_entry le join lists l ON le.list_id = l.id
+  where l.mobile_clients_id
+  = ?"
+               mobile-clients-id]))
 
 ;(defn update-user [db id fields]
 ;  (j/update! db :users fields ["id = ?" id]))
