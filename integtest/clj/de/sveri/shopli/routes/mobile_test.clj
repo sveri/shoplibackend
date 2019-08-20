@@ -109,8 +109,16 @@
         entries (:list-entries first-list)]
     (is (= "list-name" (:name first-list)))
     (is (= 2 (count entries)))
-    (is (= "entry-name2" (-> entries first :name)))
-    (is (= "entry-name1" (-> entries second :name)))))
+    (is (= "entry-name1" (-> entries first :name)))
+    (is (= "entry-name2" (-> entries second :name)))))
+
+
+(deftest get-initial-data-only-lists
+  (let [_ (-> (parse-response-body (add-list "list-name")) :list :id)
+        _ (-> (parse-response-body (add-list "list-name2")) :list :id)
+        list-with-entries (-> (parse-response-body (get-with-url "mobile/initial-data")) :lists)]
+    (is (= 2 (count list-with-entries)))
+    (is (= 0 (count (:list-entries (first list-with-entries)))))))
 
 
 

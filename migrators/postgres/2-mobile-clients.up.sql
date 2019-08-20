@@ -2,7 +2,7 @@
 
 
 CREATE TABLE mobile_clients (
-id bigserial NOT NULL PRIMARY KEY,
+id uuid primary key default gen_random_uuid(),
 device_id text NOT NULL,
 app_id text NOT NULL,
 user_id BIGINT

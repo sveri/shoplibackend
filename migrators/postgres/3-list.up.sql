@@ -2,9 +2,9 @@
 
 
 CREATE TABLE lists (
-id bigserial NOT NULL PRIMARY KEY,
+id uuid primary key default gen_random_uuid(),
 name text,
-mobile_clients_id BIGINT NOT NULL
+mobile_clients_id uuid
 );
 
 ALTER TABLE lists OWNER TO shoplibackend;

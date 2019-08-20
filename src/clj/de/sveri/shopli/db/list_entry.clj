@@ -12,8 +12,13 @@
 ;
 ;(defn username-exists? [db email] (some? (get-user-by-email db email)))
 
+(defn uuid-str->pg-uuid  [uuid]
+  (doto (org.postgresql.util.PGobject.)
+    (.setType "uuid")
+    (.setValue uuid)))
+
 (defn create-list-entry [db name list-id]
-  (first (j/insert! db :list_entry {:name name :list_id list-id})))
+  (first (j/insert! db :list_entry {:name name :list_id (uuid-str->pg-uuid list-id)})))
 
 (defn get-list-entries [db list-id]
   (j/query db ["select * from list_entry where list_id = ? order by created_at asc" list-id]))
