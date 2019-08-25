@@ -1,5 +1,5 @@
 (ns de.sveri.shopli.routes.mobile
-  (:require [compojure.core :refer [routes GET POST]]
+  (:require [compojure.core :refer [routes GET POST PUT]]
             [compojure.coercions :refer [as-uuid]]
             [ring.util.response :refer [response status]]
             [de.sveri.shopli.db.lists :as db-l]
@@ -8,7 +8,8 @@
             [de.sveri.shopli.service.auth :as sa]
             [buddy.sign.jwt :as jwt]
             [clojure.string :as str]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log])
+  (:import (java.util UUID)))
 
 (defn get-mobile-clients-id [db req]
   (let [claims (sa/get-claims-from-req req)]
@@ -36,9 +37,10 @@
   (let [mobile-clients-id (get-mobile-clients-id db req)]
     (response {:status :ok :lists (db-l/get-lists db mobile-clients-id)})))
 
-(defn add-list-entry [list-id name db]
+(defn add-list-entry [id list-id name db]
   (try
-    (let [list-entry (db-le/create-list-entry db name list-id)]
+    (let [id (if (str/blank? id) (str (UUID/randomUUID)) id)
+          list-entry (db-le/create-list-entry db id name list-id)]
       (response {:status :ok :list-entry list-entry}))
     (catch Exception e (log/error "Failed adding list-entry with name: " name)
                        (.printStackTrace e)
@@ -66,12 +68,28 @@
     (response {:status :ok :lists lists-with-entries})))
 
 
+(defn update-list-entry [id name done db]
+  (try
+    (db-le/update-list-entry db id name done)
+    (response {:status :ok :list-entry (db-le/get-list-by-id db id)})
+    (catch Exception e (log/error "Failed updating list-entry with name: " name)
+                       (.printStackTrace e)
+                       (status (response {:error "failed updating list entry"}) 500))))
+
+(defn share-list [db list-id req]
+  (let [mobile-clients-id (get-mobile-clients-id db req)]
+        ;list (db-l/create-list db name mobile-clients-id)]
+    (response {:status :ok :list list})))
+
+
 (defn mobile-routes [config db]
   (routes
     (GET "/mobile/initial-data" req (get-initial-data db req))
     (POST "/mobile/authenticate" [device-id app-id :as req] (authenticate device-id app-id req))
     (POST "/mobile/list" [name :as req] (add-list name db req))
     (GET "/mobile/list" req (get-lists db req))
-    (POST "/mobile/list-entry" [list-id name] (add-list-entry list-id name db))
-    (GET "/mobile/list-entry/list/:id" [id :<< as-uuid] (get-list-entries db id))))
+    (POST "/mobile/list-entry" [id list-id name] (add-list-entry id list-id name db))
+    (PUT "/mobile/list-entry/:id" [id :<< as-uuid name done] (update-list-entry id name done db))
+    (GET "/mobile/list-entry/list/:id" [id :<< as-uuid] (get-list-entries db id))
+    (POST "/mobile/list/share/:id" [id :<< as-uuid :as req] (share-list db id req))))
 
