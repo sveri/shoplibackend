@@ -64,4 +64,8 @@
   (j/execute! db ["CREATE TABLE list_entry (id uuid primary key default gen_random_uuid(), list_id uuid NOT NULL,
                     name text,done boolean default false not null,
                     created_at timestamp without time zone default (now()));"])
+  (j/execute! db ["drop table if exists share_hashes;"])
+  (j/execute! db ["CREATE TABLE share_hashes (mobile_clients_id uuid NOT NULL, hash TEXT NOT NULL, list_id uuid NOT NULL);"])
+  (j/execute! db ["drop table if exists shared_list_to_user;"])
+  (j/execute! db ["CREATE TABLE shared_list_to_user ( mobile_clients_id uuid NOT NULL, list_id uuid NOT NULL\n);"])
   (f))

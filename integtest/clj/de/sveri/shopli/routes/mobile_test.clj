@@ -2,7 +2,9 @@
   (:require [clojure.test :refer :all]
             [de.sveri.shopli.setup :refer [test-base-url setup-db server-setup]]
             [clj-http.client :as cl]
-            [clojure.data.json :as j]))
+            [clojure.data.json :as j]
+            [clojure.string :as str])
+  (:import (java.util UUID)))
 
 (use-fixtures :each setup-db)
 (use-fixtures :once server-setup)
@@ -148,12 +150,28 @@
     (is (= 0 (count (:list-entries (first list-with-entries)))))))
 
 
+(deftest share-list
+  (let [shared-list-id (-> (parse-response-body (add-list "list-name")) :list :id)
+        share-hash (-> (post-to-url-with-body "mobile/list/share" {:list-id shared-list-id})
+                       parse-response-body
+                       :hash)]
+    (is (UUID/fromString share-hash))
+    (is (not (str/blank? share-hash)))))
+
+
 (deftest share-list-workflow
   (let [shared-list-id (-> (parse-response-body (add-list "list-name")) :list :id)
-        share-hash (-> (parse-response-body (post-to-url-with-body "mobile/list/share" {:list-id shared-list-id})))
-        _ (-> (parse-response-body (post-to-url-with-body "mobile/list/accept-share" {:share-hash share-hash}
-                                                          "device-id-2")))
-        lists-for-device-2 (-> (get-with-url "mobile/list" "device-id-2") parse-response-body :lists)]
-    (is (= 1 (count lists-for-device-2)))))
+        share-hash (-> (post-to-url-with-body "mobile/list/share" {:list-id shared-list-id})
+                       parse-response-body
+                       :hash)
+        _ (post-to-url-with-body "mobile/list/accept-share"
+                                 {:share-hash share-hash}
+                                 "device-id-2")
+        lists-for-device-2 (-> (get-with-url "mobile/list" "device-id-2") parse-response-body :lists)
+        initial-data-for-device-2 (-> (parse-response-body (get-with-url "mobile/initial-data" "device-id-2")) :lists)]
+    (is (= 1 (count lists-for-device-2)))
+    (is (= shared-list-id (-> lists-for-device-2 first :id)))
+    (is (= 1 (count initial-data-for-device-2)))
+    (is (= shared-list-id (-> initial-data-for-device-2 first :id)))))
 
 

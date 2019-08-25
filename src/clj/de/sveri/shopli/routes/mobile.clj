@@ -5,6 +5,8 @@
             [de.sveri.shopli.db.lists :as db-l]
             [de.sveri.shopli.db.list-entry :as db-le]
             [de.sveri.shopli.db.mobile-clients :as db-mc]
+            [de.sveri.shopli.db.share_hash :as db-sh]
+            [de.sveri.shopli.db.shared-list-to-user :as db-sltu]
             [de.sveri.shopli.service.auth :as sa]
             [buddy.sign.jwt :as jwt]
             [clojure.string :as str]
@@ -34,8 +36,10 @@
 
 
 (defn get-lists [db req]
-  (let [mobile-clients-id (get-mobile-clients-id db req)]
-    (response {:status :ok :lists (db-l/get-lists db mobile-clients-id)})))
+  (let [mobile-clients-id (get-mobile-clients-id db req)
+        lists (db-l/get-lists db mobile-clients-id)
+        shared-lists (db-sltu/get-lists-by-client db mobile-clients-id)]
+    (response {:status :ok :lists (concat lists shared-lists)})))
 
 (defn add-list-entry [id list-id name db]
   (try
@@ -77,9 +81,18 @@
                        (status (response {:error "failed updating list entry"}) 500))))
 
 (defn share-list [db list-id req]
-  (let [mobile-clients-id (get-mobile-clients-id db req)]
-        ;list (db-l/create-list db name mobile-clients-id)]
-    (response {:status :ok :list list})))
+  (let [mobile-clients-id (get-mobile-clients-id db req)
+        uuid (UUID/randomUUID)
+        _ (db-sh/create-hash db mobile-clients-id list-id uuid)]
+    (response {:status :ok :hash uuid})))
+
+
+(defn accept-share-list [db share-hash req]
+  (let [mobile-clients-id (get-mobile-clients-id db req)
+        share-hash (db-sh/get-hash db share-hash)
+        shared-list-id (:list_id share-hash)
+        _ (db-sltu/create-entry db mobile-clients-id shared-list-id)]
+    (response {:status :ok})))
 
 
 (defn mobile-routes [config db]
@@ -91,5 +104,6 @@
     (POST "/mobile/list-entry" [id list-id name] (add-list-entry id list-id name db))
     (PUT "/mobile/list-entry/:id" [id :<< as-uuid name done] (update-list-entry id name done db))
     (GET "/mobile/list-entry/list/:id" [id :<< as-uuid] (get-list-entries db id))
-    (POST "/mobile/list/share/:id" [id :<< as-uuid :as req] (share-list db id req))))
+    (POST "/mobile/list/share" [list-id :<< as-uuid :as req] (share-list db list-id req))
+    (POST "/mobile/list/accept-share" [share-hash :<< as-uuid :as req] (accept-share-list db share-hash req))))
 

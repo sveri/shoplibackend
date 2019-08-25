@@ -3,8 +3,8 @@
 
 CREATE TABLE list_entry (
 id uuid primary key default gen_random_uuid(),
-list_id uuid,
-name text,
+list_id uuid NOT NULL,
+name text NOT NULL,
 done boolean default false not null,
 created_at timestamp without time zone default (now())
 );
