@@ -68,6 +68,7 @@
 (defn get-initial-data [db req]
   (let [mobile-clients-id (get-mobile-clients-id db req)
         lists (db-l/get-lists db mobile-clients-id)
+        lists (concat lists (db-sltu/get-lists-by-client db mobile-clients-id))
         lists-with-entries (map #(assoc % :list-entries (db-le/get-list-entries db (:id %))) lists)]
     (response {:status :ok :lists lists-with-entries})))
 
