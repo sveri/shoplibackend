@@ -53,7 +53,7 @@
   (stop-server))
 
 (defn setup-db [f]
-  (j/execute! db ["CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""])
+  (j/execute! db ["CREATE EXTENSION IF NOT EXISTS \"pgcrypto\";"])
   (j/execute! db ["drop table if exists mobile_clients;"])
   (j/execute! db ["CREATE TABLE mobile_clients ( id uuid primary key default gen_random_uuid(), device_id text NOT NULL, app_id
   text NOT NULL, user_id BIGINT);"])
@@ -65,7 +65,11 @@
                     name text,done boolean default false not null,
                     created_at timestamp without time zone default (now()));"])
   (j/execute! db ["drop table if exists share_hashes;"])
-  (j/execute! db ["CREATE TABLE share_hashes (mobile_clients_id uuid NOT NULL, hash TEXT NOT NULL, list_id uuid NOT NULL);"])
+  (j/execute! db ["CREATE TABLE share_hashes (mobile_clients_id uuid NOT NULL, hash TEXT NOT NULL, list_id uuid NOT NULL);
+                  ALTER TABLE share_hashes ADD COLUMN from_string TEXT; ALTER TABLE share_hashes ADD COLUMN to_string
+                  TEXT;"])
   (j/execute! db ["drop table if exists shared_list_to_user;"])
-  (j/execute! db ["CREATE TABLE shared_list_to_user ( mobile_clients_id uuid NOT NULL, list_id uuid NOT NULL\n);"])
+  (j/execute! db ["CREATE TABLE shared_list_to_user ( mobile_clients_id uuid NOT NULL, list_id uuid NOT NULL\n);
+                  ALTER TABLE shared_list_to_user ADD COLUMN from_string TEXT;
+                  ALTER TABLE shared_list_to_user ADD COLUMN to_string TEXT;"])
   (f))

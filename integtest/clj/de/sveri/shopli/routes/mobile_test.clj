@@ -46,6 +46,12 @@
                            :throw-exceptions false}
                           device-id)))
 
+(defn add-list [list-name & [device-icd]]
+  (post-to-url-with-body "mobile/list" {:name list-name} device-icd))
+
+(defn add-list-entry [list-id entry-name]
+  (post-to-url-with-body (str "/mobile/list-entry") {:name entry-name :list-id list-id}))
+
 (deftest authentication
   (let [resp (get-api-token-response)]
     (is (= 200 (:status resp)))))
@@ -56,9 +62,6 @@
                        :content-type     :json
                        :throw-exceptions false})]
     (is (= 403 (:status resp)))))
-
-(defn add-list [list-name & [device-icd]]
-  (post-to-url-with-body "mobile/list" {:name list-name} device-icd))
 
 (deftest add-one-list
   (let [resp (add-list "list-name")
@@ -91,9 +94,6 @@
         lists-for-device-2 (-> (get-with-url "mobile/list" "device-id-2") parse-response-body :lists)]
     (is (= 1 (count lists-for-device-1)))
     (is (= 1 (count lists-for-device-2)))))
-
-(defn add-list-entry [list-id entry-name]
-  (post-to-url-with-body (str "/mobile/list-entry") {:name entry-name :list-id list-id}))
 
 (defn update-list-entry [id entry-name done]
   (put-to-url-with-body (str "/mobile/list-entry/" id) {:name entry-name :done done}))
@@ -159,6 +159,17 @@
     (is (not (str/blank? share-hash)))))
 
 
+(deftest share-list-with-from-and-to
+  (let [shared-list-id (-> (parse-response-body (add-list "list-name")) :list :id)
+        share-hash (-> (post-to-url-with-body "mobile/list/share" {:list-id shared-list-id
+                                                                   :from "from"
+                                                                   :to "to"})
+                       parse-response-body)]
+    (is (UUID/fromString (:hash share-hash)))
+    (is (= "from" (:from share-hash)))
+    (is (= "to" (:to share-hash)))))
+
+
 (deftest share-list-workflow
   (let [shared-list-id (-> (parse-response-body (add-list "list-name")) :list :id)
         share-hash (-> (post-to-url-with-body "mobile/list/share" {:list-id shared-list-id})
@@ -173,5 +184,27 @@
     (is (= shared-list-id (-> lists-for-device-2 first :id)))
     (is (= 1 (count initial-data-for-device-2)))
     (is (= shared-list-id (-> initial-data-for-device-2 first :id)))))
+
+(deftest share-list-workflow-with-from-and-to
+  (let [shared-list-id (-> (parse-response-body (add-list "list-name")) :list :id)
+        share-hash (-> (post-to-url-with-body "mobile/list/share" {:list-id shared-list-id
+                                                                   :from "from"
+                                                                   :to "to"})
+                       parse-response-body
+                       :hash)
+        _ (post-to-url-with-body "mobile/list/accept-share"
+                                 {:share-hash share-hash}
+                                 "device-id-2")
+        lists-for-device-2 (-> (get-with-url "mobile/list" "device-id-2") parse-response-body :lists)
+        initial-data-for-device-2 (-> (parse-response-body (get-with-url "mobile/initial-data" "device-id-2")) :lists)]
+    (is (= 1 (count lists-for-device-2)))
+    (is (= shared-list-id (-> lists-for-device-2 first :id)))
+    (is (= "from" (-> lists-for-device-2 first :from_string)))
+    (is (= "to" (-> lists-for-device-2 first :to_string)))
+    (is (= 1 (count initial-data-for-device-2)))
+    (is (= shared-list-id (-> initial-data-for-device-2 first :id)))
+    (is (= "from" (-> initial-data-for-device-2 first :from_string)))
+    (is (= "to" (-> initial-data-for-device-2 first :to_string)))))
+
 
 
