@@ -10,6 +10,8 @@ ALTER TABLE shared_list_to_user OWNER TO shoplibackend;
 
 CREATE UNIQUE INDEX shared_list_to_user_mobile_clients_id ON shared_list_to_user (mobile_clients_id);
 
+
+-- v 1.1.0
 ALTER TABLE shared_list_to_user ADD COLUMN from_string TEXT;
 ALTER TABLE shared_list_to_user ADD COLUMN to_string TEXT;
 

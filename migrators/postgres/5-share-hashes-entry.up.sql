@@ -9,6 +9,8 @@ list_id uuid NOT NULL
 
 ALTER TABLE share_hashes OWNER TO shoplibackend;
 
+
+-- v 1.1.0
 ALTER TABLE share_hashes ADD COLUMN from_string TEXT;
 ALTER TABLE share_hashes ADD COLUMN to_string TEXT;
 

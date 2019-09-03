@@ -34,12 +34,22 @@
                          (.printStackTrace e)
                          (status (response {:error "failed adding list"}) 500)))))
 
+(defn get-own-and-shared-lists [db mobile-clients-id]
+  (let [lists (db-l/get-lists db mobile-clients-id)
+        lists (mapv #(assoc % :shared false) lists)
+        shared-lists (db-sltu/get-lists-by-client db mobile-clients-id)
+        shared-lists (mapv #(assoc % :shared true) shared-lists)]
+    (concat lists shared-lists)))
 
 (defn get-lists [db req]
+  (let [mobile-clients-id (get-mobile-clients-id db req)]
+    (response {:status :ok :lists (get-own-and-shared-lists db mobile-clients-id)})))
+
+(defn get-initial-data [db req]
   (let [mobile-clients-id (get-mobile-clients-id db req)
-        lists (db-l/get-lists db mobile-clients-id)
-        shared-lists (db-sltu/get-lists-by-client db mobile-clients-id)]
-    (response {:status :ok :lists (concat lists shared-lists)})))
+        lists (get-own-and-shared-lists db mobile-clients-id)
+        lists-with-entries (map #(assoc % :list-entries (db-le/get-list-entries db (:id %))) lists)]
+    (response {:status :ok :lists lists-with-entries})))
 
 (defn add-list-entry [id list-id name db]
   (try
@@ -66,13 +76,6 @@
 ;                  list (assoc {} :id (:l_id list-entry-with-list) :name (:l_name list-entry-with-list)
 ;                                 :list-entries (conj existing-list-entries list-entry))]
 ;              (recur (rest list-entries-with-list) (assoc lists-map (:id list) list)))))))
-
-(defn get-initial-data [db req]
-  (let [mobile-clients-id (get-mobile-clients-id db req)
-        lists (db-l/get-lists db mobile-clients-id)
-        lists (concat lists (db-sltu/get-lists-by-client db mobile-clients-id))
-        lists-with-entries (map #(assoc % :list-entries (db-le/get-list-entries db (:id %))) lists)]
-    (response {:status :ok :lists lists-with-entries})))
 
 
 (defn update-list-entry [id name done db]

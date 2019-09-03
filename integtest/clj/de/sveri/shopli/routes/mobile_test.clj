@@ -179,11 +179,14 @@
                                  {:share-hash share-hash}
                                  "device-id-2")
         lists-for-device-2 (-> (get-with-url "mobile/list" "device-id-2") parse-response-body :lists)
+        initial-data-for-device-1 (-> (parse-response-body (get-with-url "mobile/initial-data" "device-id-1")) :lists)
         initial-data-for-device-2 (-> (parse-response-body (get-with-url "mobile/initial-data" "device-id-2")) :lists)]
     (is (= 1 (count lists-for-device-2)))
     (is (= shared-list-id (-> lists-for-device-2 first :id)))
     (is (= 1 (count initial-data-for-device-2)))
-    (is (= shared-list-id (-> initial-data-for-device-2 first :id)))))
+    (is (= shared-list-id (-> initial-data-for-device-2 first :id)))
+    (is (not (-> initial-data-for-device-1 first :shared)))
+    (is (-> initial-data-for-device-2 first :shared))))
 
 (deftest share-list-workflow-with-from-and-to
   (let [shared-list-id (-> (parse-response-body (add-list "list-name")) :list :id)
