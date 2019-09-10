@@ -6,8 +6,8 @@
             [de.sveri.shopli.db.list-entry :as db-le]
             [de.sveri.shopli.db.mobile-clients :as db-mc]
             [de.sveri.shopli.db.share_hash :as db-sh]
-            [de.sveri.shopli.db.shared-list-to-user :as db-sltu]
             [de.sveri.shopli.service.auth :as sa]
+            [de.sveri.shopli.service.list :as sl]
             [buddy.sign.jwt :as jwt]
             [clojure.string :as str]
             [clojure.tools.logging :as log])
@@ -28,18 +28,20 @@
     (status (response {:error "name cannot be empty"}) 500)
     (try
       (let [mobile-clients-id (get-mobile-clients-id db req)
-            list (db-l/create-list db name mobile-clients-id)]
+            list (sl/create-list db name mobile-clients-id)]
         (response {:status :ok :list list}))
       (catch Exception e (log/error "Failed adding list with name: " name)
                          (.printStackTrace e)
                          (status (response {:error "failed adding list"}) 500)))))
 
 (defn get-own-and-shared-lists [db mobile-clients-id]
-  (let [lists (db-l/get-lists db mobile-clients-id)
-        lists (mapv #(assoc % :shared false) lists)
-        shared-lists (db-sltu/get-lists-by-client db mobile-clients-id)
-        shared-lists (mapv #(assoc % :shared true) shared-lists)]
-    (concat lists shared-lists)))
+  (let [lists (db-l/get-lists db mobile-clients-id)]
+    (mapv #(assoc % :shared (sl/is-shared? db (:id %))) lists)))
+  ;(let [lists (db-l/get-lists db mobile-clients-id)
+  ;      lists (mapv #(assoc % :shared false) lists)
+  ;      shared-lists (db-sltu/get-lists-by-client db mobile-clients-id)
+  ;      shared-lists (mapv #(assoc % :shared true) shared-lists)]
+  ;  (concat lists shared-lists)))
 
 (defn get-lists [db req]
   (let [mobile-clients-id (get-mobile-clients-id db req)]
@@ -65,18 +67,6 @@
 (defn get-list-entries [db list-id]
   (response {:status :ok :list-entries (db-le/get-list-entries db list-id)}))
 
-;(defn split-list-entries-and-add-to-list [list-entries-with-list]
-;  (vals (loop [list-entries-with-list list-entries-with-list lists-map {}]
-;          (if (empty? list-entries-with-list)
-;            lists-map
-;            (let [list-entry-with-list (first list-entries-with-list)
-;                  list-entry (select-keys list-entry-with-list [:id :name :done :created_at])
-;                  existing-list (get lists-map (:l_id list-entry-with-list))
-;                  existing-list-entries (get existing-list :list-entries)
-;                  list (assoc {} :id (:l_id list-entry-with-list) :name (:l_name list-entry-with-list)
-;                                 :list-entries (conj existing-list-entries list-entry))]
-;              (recur (rest list-entries-with-list) (assoc lists-map (:id list) list)))))))
-
 
 (defn update-list-entry [id name done db]
   (try
@@ -86,23 +76,25 @@
                        (.printStackTrace e)
                        (status (response {:error "failed updating list entry"}) 500))))
 
-(defn share-list [db list-id from to req]
+(defn share-list [db list-id shared_by shared_with req]
   (try
     (let [mobile-clients-id (get-mobile-clients-id db req)
           uuid (UUID/randomUUID)
-          _ (db-sh/create-hash db mobile-clients-id list-id from to uuid)]
-      (response {:status :ok :hash uuid :from from :to to}))
+          _ (db-sh/create-hash db mobile-clients-id list-id shared_by shared_with uuid)]
+      (response {:status :ok :hash uuid}))
     (catch Exception e (log/error "Failed to share a list: " name)
                        (.printStackTrace e)
                        (status (response {:error "failed to share a list"}) 500))))
 
-
 (defn accept-share-list [db share-hash req]
-  (let [mobile-clients-id (get-mobile-clients-id db req)
-        share-hash (db-sh/get-hash db share-hash)
-        ;shared-list-id (:list_id share-hash)
-        _ (db-sltu/create-entry db mobile-clients-id share-hash)]
-    (response {:status :ok})))
+  (try
+    (let [request-mobile-clients-id (get-mobile-clients-id db req)
+          share-hash (db-sh/get-hash db share-hash)
+          _ (sl/accept-share-list db request-mobile-clients-id share-hash)]
+      (response {:status :ok}))
+    (catch Exception e (log/error "Failed to accept a list: " name)
+                       (.printStackTrace e)
+                       (status (response {:error "failed to accept a list"}) 500))))
 
 
 (defn mobile-routes [config db]
@@ -113,7 +105,8 @@
     (POST "/mobile/authenticate" [device-id app-id :as req] (authenticate device-id app-id req))
     (POST "/mobile/list" [name :as req] (add-list name db req))
     (POST "/mobile/list-entry" [id list-id name] (add-list-entry id list-id name db))
-    (POST "/mobile/list/share" [list-id :<< as-uuid from to :as req] (share-list db list-id from to req))
+    (POST "/mobile/list/share" [list-id :<< as-uuid shared_by shared_with :as req]
+      (share-list db list-id shared_by shared_with req))
     (POST "/mobile/list/accept-share" [share-hash :<< as-uuid :as req] (accept-share-list db share-hash req))
     (PUT "/mobile/list-entry/:id" [id :<< as-uuid name done] (update-list-entry id name done db))))
 
