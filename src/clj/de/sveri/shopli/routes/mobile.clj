@@ -23,12 +23,12 @@
     (response {:api-token (jwt/sign {:device-id device-id :app-id app-id} sa/secret {:alg :hs512})})))
 
 
-(defn add-list [name db req]
+(defn add-list [id name db req]
   (if (str/blank? name)
     (status (response {:error "name cannot be empty"}) 500)
     (try
       (let [mobile-clients-id (get-mobile-clients-id db req)
-            list (sl/create-list db name mobile-clients-id)]
+            list (sl/create-list db id name mobile-clients-id)]
         (response {:status :ok :list list}))
       (catch Exception e (log/error "Failed adding list with name: " name)
                          (.printStackTrace e)
@@ -103,7 +103,7 @@
     (GET "/mobile/list" req (get-lists db req))
     (GET "/mobile/list-entry/list/:id" [id :<< as-uuid] (get-list-entries db id))
     (POST "/mobile/authenticate" [device-id app-id :as req] (authenticate device-id app-id req))
-    (POST "/mobile/list" [name :as req] (add-list name db req))
+    (POST "/mobile/list" [name id :as req] (add-list id name db req))
     (POST "/mobile/list-entry" [id list-id name] (add-list-entry id list-id name db))
     (POST "/mobile/list/share" [list-id :<< as-uuid shared_by shared_with :as req]
       (share-list db list-id shared_by shared_with req))

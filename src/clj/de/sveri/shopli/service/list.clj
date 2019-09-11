@@ -2,8 +2,8 @@
   (:require [de.sveri.shopli.db.lists :as db-l]
             [de.sveri.shopli.db.mobile-clients-list :as db-mcl]))
 
-(defn create-list [db name mobile-clients-id]
-  (let [list (db-l/create-list db name mobile-clients-id)]
+(defn create-list [db id name mobile-clients-id]
+  (let [list (db-l/create-list db id name mobile-clients-id)]
     (db-mcl/create-entry db mobile-clients-id (:id list))
     list))
 

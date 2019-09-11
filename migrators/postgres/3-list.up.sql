@@ -2,7 +2,7 @@
 
 
 CREATE TABLE lists (
-id uuid primary key default gen_random_uuid(),
+id uuid primary key,
 name text NOT NULL,
 mobile_clients_id uuid NOT NULL
 );

@@ -7,8 +7,8 @@ CREATE TABLE mobile_clients_list (
 mobile_clients_id uuid NOT NULL,
 list_id uuid NOT NULL,
 shared boolean not null default false,
-shared_by text not null default "",
-shared_with text not null default ""
+shared_by text not null default '',
+shared_with text not null default ''
 );
 
 ALTER TABLE mobile_clients_list OWNER TO shoplibackend;
